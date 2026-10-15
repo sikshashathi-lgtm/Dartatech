@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>शिक्षा साथी | Tutor Profile & Location Portal</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --gov-blue: #003366;
+            --gov-red: #c8102e;
+            --gov-gold: #d4af37;
+            --gov-bg: #f4f6f9;
+            --gov-card-bg: #ffffff;
+            --border-color: #cbd5e1;
+            --success-green: #15803d;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--gov-bg);
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .top-stripe {
+            background: var(--gov-red);
+            height: 4px;
+            width: 100%;
+        }
+
+        header {
+            background: var(--gov-blue);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            border-bottom: 2px solid var(--gov-gold);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            height: 42px;
+            width: auto;
+            border-radius: 4px;
+            background: #fff;
+            padding: 2px;
+        }
+
+        header h1 {
+            font-size: 19px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+
+        header h1 span {
+            color: var(--gov-gold);
+            font-size: 12px;
+            background: rgba(255,255,255,0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--gov-gold);
+        }
+
+        .main-wrapper {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 15px;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--gov-card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--gov-blue);
+            border-bottom: 2px solid var(--gov-gold);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--gov-blue);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fff;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--gov-blue);
+            box-shadow: 0 0 0 3px rgba(0,51,102,0.15);
+        }
+
+        .form-group input[readonly] {
+            background-color: #e2e8f0;
+            cursor: not-allowed;
+            color: #64748b;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            background: var(--gov-blue);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-action:hover {
+            background: #002244;
+        }
+
+        .status-message {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+        }
+
+        .status-success { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+        .status-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .status-info { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+
+        /* General Modal Overlay (For Loading & Map) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 15px;
+        }
+
+        .notice-modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            border: 3px solid var(--gov-gold);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .notice-modal-content h3 {
+            color: var(--gov-blue);
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .notice-modal-content p {
+            font-size: 13.5px;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 850px;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 3px solid var(--gov-gold);
+        }
+
+        .modal-header {
+            background: var(--gov-blue);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .modal-footer {
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .custom-pin {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            border: 3px solid #ffffff;
+            background: var(--gov-red);
+            color: #ffffff;
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING / NOTICE POPUP (Shown initially) -->
+    <div class="modal-overlay" id="loadingModal">
+        <div class="notice-modal-content">
+            <h3 id="notice-title">⏳ कृपया प्रतीक्षा गर्नुहोस्...</h3>
+            <p id="notice-desc">
+                सिस्टममा शिक्षकहरूको डाटा लोड हुँदैछ। <br><br>
+                <b>निर्देशन:</b><br>
+                • आफ्नो प्रोफाइल चेक गर्नुहोस्।<br>
+                • लोकेशन नभएमा नक्सामा राख्नुहोस्, भएकोमा सच्याउनुहोस्।<br>
+                • सवारी साधन (साइकल, स्कुटर, मोटरसाइकल आदि) भएमा सही छान्नुहोस्।<br>
+                • अनलाइन वा अफलाइन कुन माध्यमबाट पढाउने हो, छान्नुहोस्।
+            </p>
+            <button class="btn-action" id="enter-btn" style="display: none;" onclick="closeLoadingModal()">बुझेँ, अगाडि बढ्नुहोस् 🚀</button>
+        </div>
+    </div>
+
+    <div class="top-stripe"></div>
+    <header>
+        <div class="brand-container">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiL7dDqEm-oYV5DXpfPm4YM9kpU1IB3uRoxQn6itok7vJskTq8Uts_flkvKk-QRxXK1R7k8fJ3s5pRHCmLbSnlA2uiocm_uwmGOmlPwI90_NOIWnclF8_JW-r3AWE2u36-ExBJSK6L82fZoB_75xwgzzTKwhX4Zza7T_M20GkGI38Y4vLc6Yi1EDMu6FDso/s1254/1000275071.png" alt="Logo" class="brand-logo">
+            <h1>शिक्षा साथी <span>Tutor Portal</span></h1>
+        </div>
+        <div id="loading-status" style="font-size: 13px; color: var(--gov-gold); font-weight: 600;">डाटा लोड हुँदैछ...</div>
+    </header>
+
+    <div class="main-wrapper">
+        <!-- SEARCH SECTION -->
+        <div class="card" id="search-section">
+            <div class="card-header">🔍 पहिचान पुष्टि गर्नुहोस्</div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Full Name (पुरा नाम)</label>
+                    <input type="text" id="teacher-name" placeholder="उदा: Ram Bahadur Thapa">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number (मोबाइल नम्बर)</label>
+                    <input type="text" id="teacher-phone" placeholder="उदा: 98XXXXXXXX">
+                </div>
+            </div>
+            <button class="btn-action" onclick="verifyTutor()">🔍 विवरण खोज्नुहोस्</button>
+            <div id="status-message" class="status-message"></div>
+        </div>
+
+        <!-- EDIT FORM SECTION (Hidden by default) -->
+        <div class="card" id="edit-profile-section" style="display: none;">
+            <div class="card-header">✏️ तपाईंको विवरण (फोन नम्बर बाहेक सच्याउनुहोस्)</div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Full Name (पूरा नाम)</label>
+                    <input type="text" id="edit-fullName">
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number (सच्याउन नमिल्ने)</label>
+                    <input type="text" id="edit-phone" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Email (इमेल)</label>
+                    <input type="email" id="edit-email">
+                </div>
+
+                <div class="form-group">
+                    <label>Gender (लिंग)</label>
+                    <select id="edit-gender">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Current Area (हाल बसोबास गर्ने ठाउँ)</label>
+                    <input type="text" id="edit-currentArea">
+                </div>
+
+                <div class="form-group">
+                    <label>Vehicle (सवारी साधन)</label>
+                    <select id="edit-vehicle">
+                        <option value="None">None</option>
+                        <option value="Cycle">Cycle</option>
+                        <option value="Scooter">Scooter</option>
+                        <option value="Motorcycle">Motorcycle</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Teaching Mode (पढाउने माध्यम)</label>
+                    <select id="edit-teachingMode">
+                        <option value="Offline">Offline (भौतिक रूपमा)</option>
+                        <option value="Online">Online (अनलाइन)</option>
+                        <option value="Both">Both (दुवै)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Highest Edu (उच्च शिक्षा)</label>
+                    <input type="text" id="edit-highestEdu">
+                </div>
+
+                <div class="form-group">
+                    <label>Faculty (संकाय / विषय)</label>
+                    <input type="text" id="edit-faculty">
+                </div>
+
+                <div class="form-group">
+                    <label>College (कलेज / विश्वविद्यालय)</label>
+                    <input type="text" id="edit-college">
+                </div>
+
+                <div class="form-group">
+                    <label>Expected Fee (अपेक्षित पारिश्रमिक)</label>
+                    <input type="text" id="edit-expectedFee">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Subjects (पढाउने विषयहरू)</label>
+                <input type="text" id="edit-subjects">
+            </div>
+
+            <button class="btn-action" style="background: var(--success-green); margin-top: 10px;" onclick="openMapModal()">
+                Proceed: सच्याउनुहोस् / लोकेशन हेर्नुहोस् 📍
+            </button>
+        </div>
+    </div>
+
+    <!-- MAP POPUP MODAL -->
+    <div class="modal-overlay" id="mapModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📍 नक्सामा आफ्नो घर/लोकेशन छान्नुहोस्</h3>
+                <button onclick="closeMapModal()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✖</button>
+            </div>
+            <div class="modal-body">
+                <div id="map"></div>
+            </div>
+            <div class="modal-footer">
+                <span id="selected-coords-text" style="font-size:12px; font-weight:bold; color:var(--gov-blue);">📍 नक्सामा टच गरी लोकेशन छान्नुहोस्</span>
+                <button class="btn-action" style="width: auto; padding: 10px 20px; background: var(--success-green);" onclick="saveProfileChanges()">
+                    💾 फिक्स लोकेशन र सेभ गर्नुहोस्
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4I0V9f7oNfSonJwHBZa4Kc7gj8CqULSdM3oMJxTM6nTEteQe9OTTKZ_JEdh0JUVA/exec";
+
+        let map = null;
+        let allTutorsData = [];
+        let currentTutor = null;
+        let activeMarker = null;
+        let selectedCoords = null;
+
+        const defaultLat = 28.2096, defaultLng = 83.9856;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetchTutorsData();
+        });
+
+        function fetchTutorsData() {
+            const statusElem = document.getElementById("loading-status");
+            const noticeTitle = document.getElementById("notice-title");
+            const noticeDesc = document.getElementById("notice-desc");
+            const enterBtn = document.getElementById("enter-btn");
+
+            statusElem.innerText = "डाटा लोड हुँदैछ...";
+
+            fetch(APPS_SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => {
+                    allTutorsData = data;
+                    statusElem.innerText = "✅ डाटा लोड भयो";
+                    noticeTitle.innerText = "✅ स्वागत छ! डाटा सफलतापूर्वक लोड भयो";
+                    noticeDesc.innerHTML = "तपाईंले आफ्नो प्रोफाइल चेक गर्न, लोकेशन राख्न/सच्याउन, सवारी साधन (साइकल, स्कुटर, मोटरसाइकल आदि) तथा अनलाइन/अफلاین पढाउने माध्यम छान्नुहोस्।";
+                    enterBtn.style.display = "block";
+                    setTimeout(() => statusElem.innerText = "", 2000);
+                })
+                .catch(() => {
+                    const callbackName = 'handleData_' + Date.now();
+                    window[callbackName] = function(data) {
+                        allTutorsData = data;
+                        statusElem.innerText = "✅ डाटा लोड भयो";
+                        noticeTitle.innerText = "✅ स्वागत छ! डाटा सफलतापूर्वक लोड भयो";
+                        noticeDesc.innerHTML = "तपाईंले आफ्नो प्रोफाइल चेक गर्न, लोकेशन राख्न/सच्याउन, सवारी साधन (साइकल, स्कुटर, मोटरसाइकल आदि) तथा अनलाइन/अफलाइन पढाउने माध्यम छान्नुहोस्।";
+                        enterBtn.style.display = "block";
+                        setTimeout(() => statusElem.innerText = "", 2000);
+                        delete window[callbackName];
+                        if (script.parentNode) script.parentNode.removeChild(script);
+                    };
+
+                    const script = document.createElement('script');
+                    script.src = `${APPS_SCRIPT_URL}?callback=${callbackName}`;
+                    script.onerror = function() {
+                        statusElem.innerText = "डाटा लोड गर्न सकिएन!";
+                        noticeTitle.innerText = "⚠️ त्रुटि!";
+                        noticeDesc.innerText = "डाटा लोड गर्न सकिएन। कृपया पृष्ठ (Page) रिफ्रेस गर्नुहोस्।";
+                    };
+                    document.body.appendChild(script);
+                });
+        }
+
+        function closeLoadingModal() {
+            document.getElementById("loadingModal").style.display = "none";
+        }
+
+        function getExactVal(row, keyName, arrayIndex) {
+            if (Array.isArray(row)) {
+                let val = row[arrayIndex];
+                return (val !== undefined && val !== null && val !== "") ? val : "N/A";
+            } else if (typeof row === 'object') {
+                for (let k in row) {
+                    if (k.trim().toLowerCase() === keyName.toLowerCase()) {
+                        let val = row[k];
+                        return (val !== undefined && val !== null && val !== "") ? val : "N/A";
+                    }
+                }
+            }
+            return "N/A";
+        }
+
+        function cleanPhone(phoneStr) {
+            if (!phoneStr || phoneStr === "N/A") return "";
+            return phoneStr.toString().replace(/[^\d]/g, '');
+        }
+
+        function extractCoords(coordStr) {
+            if (coordStr && coordStr !== "N/A" && typeof coordStr === 'string') {
+                let cleanVal = coordStr.replace(/[^\d.,-]/g, ' ').trim();
+                let parts = cleanVal.split(/[\s,]+/);
+                if (parts.length >= 2) {
+                    let lat = parseFloat(parts[0]);
+                    let lng = parseFloat(parts[1]);
+                    if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
+                }
+            }
+            return null;
+        }
+
+        function verifyTutor() {
+            const inputName = document.getElementById("teacher-name").value.trim().toLowerCase();
+            const inputPhone = cleanPhone(document.getElementById("teacher-phone").value.trim());
+
+            if (!inputName || !inputPhone) {
+                showStatus("कृपया आफ्नो नाम र फोन नम्बर दुवै राख्नुहोस्!", "error");
+                return;
+            }
+
+            if (!allTutorsData || allTutorsData.length === 0) {
+                showStatus("डाटा अझै लोड भइरहेको छ, कृपया केही सेकेन्ड पर्खनुहोस्!", "error");
+                return;
+            }
+
+            const matched = allTutorsData.find(tutor => {
+                const dbName = getExactVal(tutor, "Full Name", 1).toString().toLowerCase();
+                const dbPhone = cleanPhone(getExactVal(tutor, "Phone Number", 4));
+                return (dbName.includes(inputName) || inputName.includes(dbName)) && 
+                       (dbPhone.endsWith(inputPhone) || inputPhone.endsWith(dbPhone));
+            });
+
+            if (!matched) {
+                showStatus("विवरण मिलेन! कृपया सही नाम र फोन हाल्नुहोस्।", "error");
+                return;
+            }
+
+            currentTutor = matched;
+
+            // Auto Fill All Fields
+            document.getElementById("edit-fullName").value = getExactVal(matched, "Full Name", 1);
+            document.getElementById("edit-phone").value = getExactVal(matched, "Phone Number", 4);
+            document.getElementById("edit-email").value = getExactVal(matched, "Email", 6) !== "N/A" ? getExactVal(matched, "Email", 6) : "";
+            document.getElementById("edit-gender").value = getExactVal(matched, "Gender", 2) !== "N/A" ? getExactVal(matched, "Gender", 2) : "Male";
+            document.getElementById("edit-currentArea").value = getExactVal(matched, "Current Area", 8) !== "N/A" ? getExactVal(matched, "Current Area", 8) : "";
+            document.getElementById("edit-vehicle").value = getExactVal(matched, "Vehicle", 9) !== "N/A" ? getExactVal(matched, "Vehicle", 9) : "None";
+            document.getElementById("edit-teachingMode").value = getExactVal(matched, "Teaching Mode", 11) !== "N/A" ? getExactVal(matched, "Teaching Mode", 11) : "Offline";
+            document.getElementById("edit-highestEdu").value = getExactVal(matched, "Highest Edu", 12) !== "N/A" ? getExactVal(matched, "Highest Edu", 12) : "";
+            document.getElementById("edit-faculty").value = getExactVal(matched, "Faculty", 13) !== "N/A" ? getExactVal(matched, "Faculty", 13) : "";
+            document.getElementById("edit-college").value = getExactVal(matched, "College", 14) !== "N/A" ? getExactVal(matched, "College", 14) : "";
+            document.getElementById("edit-subjects").value = getExactVal(matched, "Subjects", 20) !== "N/A" ? getExactVal(matched, "Subjects", 20) : "";
+            document.getElementById("edit-expectedFee").value = getExactVal(matched, "Expected Fee", 19) !== "N/A" ? getExactVal(matched, "Expected Fee", 19) : "";
+
+            const editSection = document.getElementById("edit-profile-section");
+            editSection.style.display = "block";
+            
+            // Auto-scroll to the edit form smoothly
+            editSection.scrollIntoView({ behavior: 'smooth' });
+
+            showStatus("विवरण भेटियो! तल सच्याउनुहोस् र Proceed बटनमा थिच्नुहोस्।", "success");
+        }
+
+        function openMapModal() {
+            document.getElementById("mapModal").style.display = "flex";
+
+            if (!map) {
+                initMap();
+            } else {
+                map.invalidateSize();
+            }
+
+            const existingCoords = extractCoords(getExactVal(currentTutor, "Map Coordinates", 10));
+            if (existingCoords) {
+                setMapPin(existingCoords);
+            } else {
+                setMapPin([defaultLat, defaultLng]);
+            }
+        }
+
+        function closeMapModal() {
+            document.getElementById("mapModal").style.display = "none";
+        }
+
+        function initMap() {
+            map = L.map('map').setView([defaultLat, defaultLng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+            map.on('click', function (e) {
+                setMapPin([e.latlng.lat, e.latlng.lng]);
+            });
+        }
+
+        function setMapPin(coords) {
+            if (activeMarker) map.removeLayer(activeMarker);
+
+            selectedCoords = `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
+            document.getElementById("selected-coords-text").innerText = `📍 रोजिएको लोकेशन: ${selectedCoords}`;
+
+            const customIcon = L.divIcon({
+                className: '',
+                html: `<div class="custom-pin">📍</div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            activeMarker = L.marker(coords, { icon: customIcon }).addTo(map);
+            map.flyTo(coords, 16);
+        }
+
+        async function saveProfileChanges() {
+            if (!currentTutor) return;
+
+            const name = document.getElementById("edit-fullName").value;
+            const phone = document.getElementById("edit-phone").value;
+            const email = document.getElementById("edit-email").value;
+            const gender = document.getElementById("edit-gender").value;
+            const currentArea = document.getElementById("edit-currentArea").value;
+            const vehicle = document.getElementById("edit-vehicle").value;
+            const teachingMode = document.getElementById("edit-teachingMode").value;
+            const highestEdu = document.getElementById("edit-highestEdu").value;
+            const faculty = document.getElementById("edit-faculty").value;
+            const college = document.getElementById("edit-college").value;
+            const subjects = document.getElementById("edit-subjects").value;
+            const expectedFee = document.getElementById("edit-expectedFee").value;
+
+            const formData = new URLSearchParams();
+            formData.append('action', 'edit');
+            formData.append('phone', phone);
+            formData.append('fullName', name);
+            formData.append('email', email);
+            formData.append('gender', gender);
+            formData.append('currentArea', currentArea);
+            formData.append('vehicle', vehicle);
+            formData.append('teachingMode', teachingMode);
+            formData.append('highestEdu', highestEdu);
+            formData.append('faculty', faculty);
+            formData.append('college', college);
+            formData.append('subjects', subjects);
+            formData.append('expectedFee', expectedFee);
+            if (selectedCoords) {
+                formData.append('mapCoords', selectedCoords);
+            }
+
+            closeMapModal();
+            showStatus("तपाईंको विवरण र लोकेशन सेभ हुँदैछ...", "info");
+
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+
+                showStatus(`धन्यवाद ${name}! तपाईंको विवरण र लोकेशन सफलतापुर्वक सेभ भयो।`, "success");
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 2500);
+
+            } catch (err) {
+                showStatus("अपडेट गर्न सकिएन! पुन: प्रयास गर्नुहोस्।", "error");
+            }
+        }
+
+        function showStatus(msg, type) {
+            const statusBox = document.getElementById("status-message");
+            statusBox.innerText = msg;
+            statusBox.className = "status-message status-" + type;
+            statusBox.style.display = "block";
+        }
+    </script>
+</body>
+</html>
